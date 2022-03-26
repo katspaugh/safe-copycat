@@ -11,7 +11,7 @@ const TextCopy = ({ text }: { text?: string }) => {
 
   return (
     <div className={styles.container}>
-      <input onFocus={copy} value={text || ''} spellCheck={false} key={text} />
+      <input onFocus={copy} defaultValue={text || ''} spellCheck={false} key={text} />
     </div>
   )
 }

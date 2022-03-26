@@ -4,6 +4,7 @@ import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_
 import { getCreationInfo, CreationInfo } from '../../utils/tx-service'
 import { copySafe } from '../../utils/eth'
 import TextCopy from '../TextCopy'
+import AddressInput from '../AddressInput'
 import styles from './styles.module.css'
 
 const ShortNames: Record<string, string> = {
@@ -19,17 +20,13 @@ const Chains: Record<string, string> = {
   '100': 'Gnosis',
   '137': 'Polygon',
   '42161': 'Arbitrum',
-};
+}
 
 const getSafeUrl = (chainId: string, safeAddress: string): string => {
-  return `https://gnosis-safe.io/app/${ShortNames[chainId]}:${safeAddress}`;
+  return `https://gnosis-safe.io/app/${ShortNames[chainId]}:${safeAddress}`
 }
 
-const isAddressHex = (address: string): boolean => {
-  return /0x[0-9a-fA-F]{40}/.test(address)
-}
-
-const App = (): React.ReactElement => {
+const Copycat = (): React.ReactElement => {
   const [safeAddress, setSafeAddress] = useState<string>()
   const [chainId, setChainId] = useState<string>()
   const [creation, setCreation] = useState<CreationInfo|null>(null)
@@ -37,23 +34,13 @@ const App = (): React.ReactElement => {
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
   const [error, setError] = useState<Error>()
   const chainSelect = useRef<HTMLSelectElement>()
-  const addressInput = useRef<HTMLInputElement>()
   const factoryAddresses: Record<string, string> = proxyFactories.networkAddresses
   const isSupported = creation ? creation.factoryAddress === factoryAddresses[chainId] : true
 
   // Allow bare Ethereum addresses and EIP-1337 addresses with a prefix
-  const onSafeAddressInput = () => {
-    const value = addressInput.current?.value || ''
-    if (!value) return
-    const [, prefix, address] = value.match(/^([a-z0-9]+:)?(0x[0-9a-fA-F]{40})$/) || []
-
-    if (prefix) {
-      const shortName = prefix.slice(0, -1)
-      const matchingChainId = Object.keys(ShortNames).find(key => ShortNames[key] === shortName)
-      setChainId(matchingChainId || '')
-    }
-  
-    setSafeAddress(isAddressHex(address) ? address : '')
+  const onSafeAddressInput = (address: string, origChainId: string) => {
+    setSafeAddress(address)
+    setChainId(origChainId)
   }
 
   const onChainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -76,8 +63,8 @@ const App = (): React.ReactElement => {
 
     // Create a copy of the Safe
     try {
-      const hash = await copySafe(chainId, newChainId, creation.transactionHash);
-      setSuccessHash(hash);
+      const hash = await copySafe(chainId, newChainId, creation.transactionHash)
+      setSuccessHash(hash)
     } catch (err) {
       console.error(err)
       setError(err)
@@ -88,7 +75,7 @@ const App = (): React.ReactElement => {
   useEffect(() => {
     setCreation(null)
 
-    if (chainId && isAddressHex(safeAddress)) {
+    if (chainId && safeAddress) {
       setError(undefined)
       setSuccessHash(undefined)
 
@@ -100,11 +87,6 @@ const App = (): React.ReactElement => {
         })
     }
   }, [chainId, safeAddress])
-
-  // Read initial input value
-  useEffect(() => {
-    onSafeAddressInput()
-  }, [addressInput])
 
   return (
     <div className={styles.container}>
@@ -131,23 +113,14 @@ const App = (): React.ReactElement => {
 
       <div>
         <b>Safe address:</b>
-        <input
-          ref={addressInput}
-          onChange={onSafeAddressInput}
-          placeholder="eth:0x0000000000000000000000000000000000000000"
-          spellCheck={false}
-          minLength={42}
-          required
-        />
-        {' '}
+        <AddressInput onChange={onSafeAddressInput} />
         {safeAddress == null || chainId == null ? '' : creation ? '✅' : '❌'}
-        {safeAddress && !isAddressHex(safeAddress) ? '❌' : ''}
       </div>
 
       <div>
         <label>
           <b>Chain:</b>
-          <select value={chainId} onChange={onChainChange}>
+          <select value={chainId || ''} onChange={onChainChange}>
             <option value="">Select a chain</option>
             {Object.keys(Chains).map((key) => (
               <option key={key} value={key}>{Chains[key]}</option>
@@ -158,11 +131,12 @@ const App = (): React.ReactElement => {
 
       <div>
         <b>Created</b> on {creation ? new Date(creation.created).toLocaleDateString() : null}
-        {' '}by <TextCopy text={creation?.creator} />
+        {' '}by<TextCopy text={creation?.creator} />
       </div>
 
       <div>
-        <b>Factory:</b> <TextCopy text={creation?.factoryAddress} />
+        <b>Factory:</b>
+        <TextCopy text={creation?.factoryAddress} />
         {' '}{creation ? isSupported ? '✅' : '❌' : ''}
       </div>
 
@@ -201,7 +175,7 @@ const App = (): React.ReactElement => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default Copycat

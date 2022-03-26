@@ -28,13 +28,7 @@
 }
 
 .container input {
-  font-size: 1em;
-  background: #fafafa;
-  padding: 0.5em;
-  border: 1px solid #333;
-  border-radius: 4px;
-  cursor: pointer;
-  min-width: 30em;
+  margin-left: 10px;
 }
 
 .container select,
