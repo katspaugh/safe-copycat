@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
 import { getCreationInfo, CreationInfo } from '../../utils/tx-service'
 import { copySafe } from '../../utils/eth'
-import TextCopy from '../TextCopy'
 import AddressInput from '../AddressInput'
 import styles from './styles.module.css'
 
@@ -98,7 +96,7 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Image src="/logo.svg" alt="Safe Copycat" height="100" width="100" /> 
+        <img src="/logo.svg" alt="Safe Copycat" height="100" width="100" /> 
 
         <div>
           <h1>
@@ -113,7 +111,7 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
 
       {!isSupported && (
         <div className={styles.warning}>
-          <b>Unsupported factory address!</b><br />
+          <strong>Unsupported factory address!</strong><br />
           Copying the Safe to another network will most likely not work.<br />
           The official proxy factory address is {factoryAddresses[chainId]}
         </div>
@@ -138,14 +136,19 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
       </div>
 
       <div>
-        <b>Created</b> on {creation ? new Date(creation.created).toLocaleDateString() : null}
-        {' '}by<TextCopy text={creation?.creator} />
+        <b>Created:</b>
+        {creation ? (
+          <>
+            {new Date(creation.created).toLocaleDateString()}
+            {' by '}{creation?.creator}
+          </>
+        ): '...'}
       </div>
 
       <div>
         <b>Factory:</b>
-        <TextCopy text={creation?.factoryAddress} />
-        {' '}{creation ? isSupported ? '✅' : '❌' : ''}
+        {creation?.factoryAddress || '...'}{' '}
+        {creation ? isSupported ? '✅' : '❌' : ''}
       </div>
 
       <div>
@@ -159,7 +162,9 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
             </select>
           </label>
 
-          <button type="submit" disabled={!creation || !isSupported}>Copy Safe</button>
+          <div className={styles.submit}>
+            <button type="submit" disabled={!creation || !isSupported}>Copy Safe</button>
+          </div>
         </form>
       </div>
 
