@@ -13,7 +13,12 @@ const isAddressHex = (address: string): boolean => {
   return /0x[0-9a-fA-F]{40}/.test(address)
 }
 
-const AddressInput = ({ onChange }: { onChange: (address: string, chainId?: string) => unknown }): React.ReactElement => {
+interface AddressInputProps {
+  defaultValue?: string
+  onChange: (address: string, chainId?: string) => unknown
+}
+
+const AddressInput = ({ onChange, defaultValue }: AddressInputProps): React.ReactElement => {
   const [addressValue, setAddressValue] = useState<string>()
   const [chainId, setChainId] = useState<string>()
   const addressInput = useRef<HTMLInputElement>()
@@ -41,15 +46,11 @@ const AddressInput = ({ onChange }: { onChange: (address: string, chainId?: stri
     )
   }, [onChange, setChainId, setAddressValue])
 
-  // Read initial input value
-  useEffect(() => {
-    onSafeAddressInput()
-  }, [addressInput, onSafeAddressInput])
-
   return (
     <span className={styles.container}>
       <input
         ref={addressInput}
+        defaultValue={defaultValue}
         onChange={onSafeAddressInput}
         placeholder="eth:0x0000000000000000000000000000000000000000"
         spellCheck={false}

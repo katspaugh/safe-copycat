@@ -26,9 +26,16 @@ const getSafeUrl = (chainId: string, safeAddress: string): string => {
   return `https://gnosis-safe.io/app/${ShortNames[chainId]}:${safeAddress}`
 }
 
-const Copycat = (): React.ReactElement => {
-  const [safeAddress, setSafeAddress] = useState<string>()
-  const [chainId, setChainId] = useState<string>()
+interface CopycatProps {
+  safe?: {
+    safeAddress: string
+    chainId: number
+  }
+}
+
+const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
+  const [safeAddress, setSafeAddress] = useState<string>(safe?.safeAddress)
+  const [chainId, setChainId] = useState<string>(safe ? safe.chainId.toString() : undefined)
   const [creation, setCreation] = useState<CreationInfo|null>(null)
   const [successHash, setSuccessHash] = useState<string>()
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
@@ -107,13 +114,14 @@ const Copycat = (): React.ReactElement => {
       {!isSupported && (
         <div className={styles.warning}>
           <b>Unsupported factory address!</b><br />
-          Copying the Safe to another network will most likely not work.
+          Copying the Safe to another network will most likely not work.<br />
+          The official proxy factory address is {factoryAddresses[chainId]}
         </div>
       )}
 
       <div>
         <b>Safe address:</b>
-        <AddressInput onChange={onSafeAddressInput} />
+        <AddressInput onChange={onSafeAddressInput} defaultValue={safeAddress} />
         {safeAddress == null || chainId == null ? '' : creation ? '✅' : '❌'}
       </div>
 
