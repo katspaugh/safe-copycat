@@ -1,0 +1,61 @@
+.container {
+  padding: 20px;
+  min-width: 900px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+}
+
+.header h1 {
+  margin-bottom: 0.5em;
+}
+
+.header div {
+  margin-left: 10px;
+}
+
+.container h3 {
+  color: #555;
+  font-weight: normal;
+  margin-top: 0;
+  margin-bottom: 30px;
+}
+
+.container > div {
+  margin: 20px 0;
+}
+
+.container input {
+  font-size: 1em;
+  background: #fafafa;
+  padding: 0.5em;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 30em;
+}
+
+.container select,
+.container button {
+  font-size: 1.5em;
+  padding: 0.5em;
+  border-radius: 10px;
+  margin-left: 0.5em;
+}
+
+.error {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.error,
+.warning {
+  text-align: center;
+  background-color: #ffdddd;
+  border: 1px solid #ff0000;
+  padding: 1.5em;
+  border-radius: 10px;
+}
