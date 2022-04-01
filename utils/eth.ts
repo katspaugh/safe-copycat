@@ -28,13 +28,23 @@ export const Chains: Record<string, string> = {
 const switchNetwork = async (chainId: string) => {
   const provider: any = await detectEthereumProvider()
 
+  const currentChainId = await provider.request({
+    method: 'eth_chainId'
+  })
+
+  const targetChainId = `0x${Number(chainId).toString(16)}`
+
+  // Already on the right chain
+  if (targetChainId === currentChainId) return
+
+  // Metamask-only: switch to the target chain
   try {
     await provider.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${Number(chainId).toString(16)}` }]
+      params: [{ chainId: targetChainId }]
     })
   } catch (err) {
-    throw new Error('Wallet connected to the wrong network')
+    throw new Error(`Please swith the wallet to ${Chains[chainId]}`)
   }
 }
 
@@ -60,7 +70,12 @@ export const getConnectedAddress = async (): Promise<string> => {
   }
 }
 
+const txInfoCache = {}
+
 export const getTransactionInfo = async (chainId: string, txHash: string): Promise<TransactionInfo> => {
+  const cacheKey = `${chainId}_${txHash}`
+  if (txInfoCache[cacheKey]) return txInfoCache[cacheKey]
+
   const provider: any = await detectEthereumProvider()
 
   // Make sure we're on the same chain as the Safe
@@ -73,6 +88,9 @@ export const getTransactionInfo = async (chainId: string, txHash: string): Promi
   })
 
   console.log('Creation tx', tx)
+
+  // Memoize the result
+  txInfoCache[cacheKey] = tx
 
   return tx
 }

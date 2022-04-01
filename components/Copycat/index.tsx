@@ -44,9 +44,6 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
     }
   }
 
-  // Chains on which creating a copy would be possible
-  const supportedChainIds = Object.keys(Chains).filter(id => !!supportedFactoryAddress[id])
-
   const isSupported = creation ? !!version : true
   const isOwner = !creation || !walletAddress ? true : creation.creator.toLowerCase() === walletAddress.toLowerCase()
 
@@ -212,7 +209,7 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
         <form action="#" method="post" onSubmit={onSubmit}>
           <label>
             <b>Select new chain:</b>
-            <select ref={chainSelect}>
+            <select ref={chainSelect} required>
               {Object.keys(Chains).map((key) => (
                 <option key={key} value={key} disabled={key === chainId || !supportedFactoryAddress[key]}>
                   {Chains[key]}
