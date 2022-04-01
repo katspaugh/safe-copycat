@@ -3,6 +3,7 @@ const txServiceHosts: Record<string, string> = {
   '4': 'safe-transaction.rinkeby.gnosis.io',
   '100': 'safe-transaction.xdai.gnosis.io',
   '137': 'safe-transaction.polygon.gnosis.io',
+  '246': 'safe-transaction.ewc.gnosis.io',
   '42161': 'safe-transaction.arbitrum.gnosis.io',
 };
 

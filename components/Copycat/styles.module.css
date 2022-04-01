@@ -46,21 +46,26 @@
   border-radius: 6px;
   background-color: #fff;
   box-shadow: none;
-  cursor: pointer;
   padding-left: 2em;
   padding-right: 2em;
 }
 
-.container button:hover {
+.container button:not([disabled]) {
+  cursor: pointer;
+}
+
+.container button:not([disabled]):hover {
   background-color: #F3F7FB;
 }
 
+.message,
 .error {
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
 }
 
+.message,
 .error,
 .warning {
   text-align: center;
@@ -70,8 +75,27 @@
   border-radius: 10px;
 }
 
+.warning {
+  margin-bottom: 40px !important;
+}
+
+.message {
+  background-color: #F3F7FB;;
+  border: 1px solid #333;
+}
+
 .submit {
   display: flex;
   justify-content: center;
   margin-top: 30px;
+}
+
+.result {
+  text-align: center;
+  padding: 30px;
+}
+
+.result a {
+  color: inherit;
+  text-decoration: underline;
 }

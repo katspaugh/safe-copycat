@@ -1,24 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
+import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
 import { getCreationInfo, CreationInfo } from '../../utils/tx-service'
-import { copySafe } from '../../utils/eth'
+import { Chains, ShortNames, connectWallet, copySafe, getConnectedAddress, getTransactionInfo } from '../../utils/eth'
 import AddressInput from '../AddressInput'
+import WalletHeader from '../WalletHeader'
 import styles from './styles.module.css'
-
-const ShortNames: Record<string, string> = {
-  '1': 'eth',
-  '4': 'rin',
-  '100': 'gno',
-  '137': 'matic',
-  '42161': 'arb1',
-}
-const Chains: Record<string, string> = {
-  '1': 'Mainnet',
-  '4': 'Rinkeby',
-  '100': 'Gnosis',
-  '137': 'Polygon',
-  '42161': 'Arbitrum',
-}
 
 const getSafeUrl = (chainId: string, safeAddress: string): string => {
   return `https://gnosis-safe.io/app/${ShortNames[chainId]}:${safeAddress}`
@@ -31,16 +18,37 @@ interface CopycatProps {
   }
 }
 
+const factoryAddresses: Record<string, string> = proxyFactories.networkAddresses
+const legacyAddresses: Record<string, string> = legacyProxyFactories.networkAddresses
+const legacyFactoryExceptions = { '100': '' } // legacy xDai factory is incomaptible with others
+
 const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
   const [safeAddress, setSafeAddress] = useState<string>(safe?.safeAddress)
   const [chainId, setChainId] = useState<string>(safe ? safe.chainId.toString() : undefined)
+  const [walletAddress, setWalletAddress] = useState<string>('')
   const [creation, setCreation] = useState<CreationInfo|null>(null)
-  const [successHash, setSuccessHash] = useState<string>()
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
-  const [error, setError] = useState<Error>()
+  const [message, setMessage] = useState<string|Error>('')
   const chainSelect = useRef<HTMLSelectElement>()
-  const factoryAddresses: Record<string, string> = proxyFactories.networkAddresses
-  const isSupported = creation ? creation.factoryAddress === factoryAddresses[chainId] : true
+
+  // If the Safe was created with a legacy 1.1.1 factory, use that for the new Safe
+  let supportedFactoryAddress = {}
+  let version = ''
+  if (creation) {
+    if (creation.factoryAddress === factoryAddresses[chainId]) {
+      version = 'v1.3.0'
+      supportedFactoryAddress = factoryAddresses
+    } else if (creation.factoryAddress === legacyAddresses[chainId]) {
+      version = 'v1.1.1'
+      supportedFactoryAddress = { ...legacyAddresses, ...legacyFactoryExceptions }
+    }
+  }
+
+  // Chains on which creating a copy would be possible
+  const supportedChainIds = Object.keys(Chains).filter(id => !!supportedFactoryAddress[id])
+
+  const isSupported = creation ? !!version : true
+  const isOwner = !creation || !walletAddress ? true : creation.creator.toLowerCase() === walletAddress.toLowerCase()
 
   // Allow bare Ethereum addresses and EIP-1337 addresses with a prefix
   const onSafeAddressInput = (address: string, origChainId: string) => {
@@ -57,46 +65,86 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
     e.preventDefault()
 
     // Reset previous request
-    setSuccessHash(undefined)
-    setError(undefined)
+    setMessage('')
 
     // Make sure we have a creation tx and a new chainId
     const newChainId = chainSelect.current.value;
-    if (!creation || !factoryAddresses[newChainId]) return
+    if (!creation || !isSupported) return
 
-    setNewSafeUrl(getSafeUrl(newChainId, safeAddress))
+    // Get transaction info
+    let txInfo = undefined
+    try {
+      txInfo = await getTransactionInfo(chainId, creation.transactionHash)
+    } catch (err) {
+      setMessage(new Error(err.message))
+      return
+    }
+
+    setMessage(`Switching to ${Chains[newChainId]} and creating a copy of the Safe`)
 
     // Create a copy of the Safe
+    let hash = ''
     try {
-      const hash = await copySafe(chainId, newChainId, creation.transactionHash)
-      setSuccessHash(hash)
+      hash = await copySafe(newChainId, txInfo)
     } catch (err) {
-      console.error(err)
-      setError(err)
+      setMessage(new Error(err.message))
+    }
+
+    if (hash) {
+      setMessage(`Transaction created: ${hash}`)
+      setNewSafeUrl(getSafeUrl(newChainId, safeAddress))
     }
   }
+
+  const onWalletConnect = async (): Promise<string> => {
+    setMessage('')
+    try {
+      const wallet = await connectWallet()
+      setWalletAddress(wallet.selectedAddress)
+    } catch (err) {
+      setMessage(new Error(err.message))
+    }
+    return ''
+  }
+
+  // Detect connected wallet
+  useEffect(() => {
+    getConnectedAddress().then(setWalletAddress)
+  }, [])
 
   // Request the Safe creation tx from the Transaction Service
   useEffect(() => {
     setCreation(null)
 
     if (chainId && safeAddress) {
-      setError(undefined)
-      setSuccessHash(undefined)
+      setMessage('')
+
+      setMessage('Getting creation transaction...')
 
       getCreationInfo(chainId, safeAddress)
-        .then(setCreation)
+        .then((data) => {
+          setCreation(data)
+          setMessage('')
+        })
         .catch((err) => {
           console.error(err)
-          setError(new Error('Failed to load creation transaction'))
+          setMessage(new Error('Failed to load creation transaction'))
         })
     }
   }, [chainId, safeAddress])
 
+  useEffect(() => {
+    if (message instanceof Error) {
+      console.error(message)
+    }
+  }, [message])
+
   return (
     <div className={styles.container}>
+      {safe ? null : <WalletHeader onConnect={onWalletConnect} walletAddress={walletAddress} />}
+
       <div className={styles.header}>
-        <img src="/logo.svg" alt="Safe Copycat" height="100" width="100" /> 
+        <img src="/logo.svg" alt="Safe Copycat" height="100" width="100" />
 
         <div>
           <h1>
@@ -112,15 +160,23 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
       {!isSupported && (
         <div className={styles.warning}>
           <strong>Unsupported factory address!</strong><br />
-          Copying the Safe to another network will most likely not work.<br />
-          The official proxy factory address is {factoryAddresses[chainId]}
+          Copying the Safe to another network will not work.<br />
+          The official proxy factory address is {factoryAddresses[chainId] || legacyAddresses[chainId]}
+        </div>
+      )}
+
+      {!isOwner && (
+        <div className={styles.warning}>
+          <strong>You&apos;re not the creator of that Safe!</strong><br />
+          Copying the Safe to another network will not work.<br />
         </div>
       )}
 
       <div>
         <b>Safe address:</b>
-        <AddressInput onChange={onSafeAddressInput} defaultValue={safeAddress} />
-        {safeAddress == null || chainId == null ? '' : creation ? '✅' : '❌'}
+        <AddressInput onChange={onSafeAddressInput} defaultValue={safeAddress}>
+          {safeAddress == null || chainId == null ? '' : creation ? '✅' : '❌'}
+        </AddressInput>
       </div>
 
       <div>
@@ -136,18 +192,19 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
       </div>
 
       <div>
-        <b>Created:</b>
-        {creation ? (
-          <>
-            {new Date(creation.created).toLocaleDateString()}
-            {' by '}{creation?.creator}
-          </>
-        ): '...'}
+        <b>Created on:</b>
+        {creation ? new Date(creation.created).toLocaleDateString() : '...'}
+      </div>
+
+      <div>
+        <b>Creator:</b>
+        {creation ? creation?.creator : '...'}
       </div>
 
       <div>
         <b>Factory:</b>
         {creation?.factoryAddress || '...'}{' '}
+        <strong>{version} </strong>
         {creation ? isSupported ? '✅' : '❌' : ''}
       </div>
 
@@ -157,7 +214,9 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
             <b>Select new chain:</b>
             <select ref={chainSelect}>
               {Object.keys(Chains).map((key) => (
-                <option key={key} value={key} disabled={key === chainId}>{Chains[key]}</option>
+                <option key={key} value={key} disabled={key === chainId || !supportedFactoryAddress[key]}>
+                  {Chains[key]}
+                </option>
               ))}
             </select>
           </label>
@@ -168,23 +227,17 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
         </form>
       </div>
 
-      {successHash && (
-        <>
-          <div>
-            <b>Transaction hash:</b> {successHash}
-          </div>
-
-          <div>
-            <a href={newSafeUrl} target="_blank" rel="noreferrer">
-              Go to the new Safe
-            </a>
-          </div>
-        </>
+      {newSafeUrl && (
+        <div className={styles.result}>
+          <a href={newSafeUrl} target="_blank" rel="noreferrer">
+            Go to the new Safe
+          </a>
+        </div>
       )}
 
-      {error && (
-        <div className={styles.error}>
-          {error.message}
+      {message && (
+        <div className={message instanceof Error ? styles.error : styles.message}>
+          {message.toString()}
         </div>
       )}
     </div>

@@ -1,0 +1,23 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.header button {
+  font-size: 16px !important;
+}
+
+.header button[disabled] {
+  color: inherit;
+  cursor: default;
+  border-color: #ddd;
+}
+
+.header button[disabled]:hover {
+  background: #fff;
+}

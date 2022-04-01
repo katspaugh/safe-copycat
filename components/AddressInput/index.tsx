@@ -1,13 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, ReactNode } from 'react'
+import { ShortNames } from '../../utils/eth'
 import styles from './styles.module.css'
-
-const ShortNames: Record<string, string> = {
-  '1': 'eth',
-  '4': 'rin',
-  '100': 'gno',
-  '137': 'matic',
-  '42161': 'arb1'
-}
 
 const isAddressHex = (address: string): boolean => {
   return /0x[0-9a-fA-F]{40}/.test(address)
@@ -16,9 +9,10 @@ const isAddressHex = (address: string): boolean => {
 interface AddressInputProps {
   defaultValue?: string
   onChange: (address: string, chainId?: string) => unknown
+  children: ReactNode
 }
 
-const AddressInput = ({ onChange, defaultValue }: AddressInputProps): React.ReactElement => {
+const AddressInput = ({ onChange, defaultValue, children }: AddressInputProps): React.ReactElement => {
   const [addressValue, setAddressValue] = useState<string>()
   const [chainId, setChainId] = useState<string>()
   const addressInput = useRef<HTMLInputElement>()
@@ -39,7 +33,7 @@ const AddressInput = ({ onChange, defaultValue }: AddressInputProps): React.Reac
     } else {
       setChainId(undefined)
     }
-  
+
     onChange(
       isAddressHex(address) ? address : '',
       matchingChainId
@@ -57,8 +51,10 @@ const AddressInput = ({ onChange, defaultValue }: AddressInputProps): React.Reac
         minLength={42}
         required
       />
-      {' '}
-      {(addressValue && !isAddressHex(addressValue)) || chainId === '' ? '❌' : ''}
+      <span className={styles.indicator}>
+        {(addressValue && !isAddressHex(addressValue)) || chainId === '' ? '❌' : ''}
+        {children}
+      </span>
     </span>
   )
 }
