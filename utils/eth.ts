@@ -10,6 +10,7 @@ type TransactionInfo = {
 export const ShortNames: Record<string, string> = {
   '1': 'eth',
   '4': 'rin',
+  '5': 'gor',
   '100': 'gno',
   '137': 'matic',
   '246': 'ewt',
@@ -19,6 +20,7 @@ export const ShortNames: Record<string, string> = {
 export const Chains: Record<string, string> = {
   '1': 'Mainnet',
   '4': 'Rinkeby',
+  '5': 'Görli',
   '100': 'Gnosis',
   '137': 'Polygon',
   '246': 'EWC',
