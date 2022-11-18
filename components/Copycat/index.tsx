@@ -66,7 +66,7 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
 
     // Make sure we have a creation tx and a new chainId
     const newChainId = chainSelect.current.value;
-    if (!creation || !isSupported) return
+    if (!creation || !walletAddress) return
 
     // Get transaction info
     let txInfo = undefined
@@ -157,15 +157,15 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
       {!isSupported && (
         <div className={styles.warning}>
           <strong>Unsupported factory address!</strong><br />
-          Copying the Safe to another network will not work.<br />
-          The official proxy factory address is {factoryAddresses[chainId] || legacyAddresses[chainId]}
+          Copying this Safe will result in a different address.<br />
+          The official proxy factory address is <b>{factoryAddresses[chainId] || legacyAddresses[chainId]}</b>
         </div>
       )}
 
       {!isOwner && (
         <div className={styles.warning}>
           <strong>You&apos;re not the creator of that Safe!</strong><br />
-          Copying the Safe to another network will not work.<br />
+          Copying this Safe will result in a different address.<br />
         </div>
       )}
 
@@ -211,15 +211,16 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
             <b>Select new chain:</b>
             <select ref={chainSelect} required>
               {Object.keys(Chains).map((key) => (
-                <option key={key} value={key} disabled={key === chainId || !supportedFactoryAddress[key]}>
+                <option key={key} value={key}>
                   {Chains[key]}
+                  {!supportedFactoryAddress[key] ? ' (unsupported)' : ''}
                 </option>
               ))}
             </select>
           </label>
 
           <div className={styles.submit}>
-            <button type="submit" disabled={!creation || !isSupported}>Copy Safe</button>
+            <button type="submit" disabled={!creation || !walletAddress}>Copy Safe</button>
           </div>
         </form>
       </div>
