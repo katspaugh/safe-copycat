@@ -15,6 +15,7 @@ export const ShortNames: Record<string, string> = {
   '137': 'matic',
   '246': 'ewt',
   '42161': 'arb1',
+  '11155111': 'sep',
 }
 
 export const Chains: Record<string, string> = {
@@ -25,6 +26,7 @@ export const Chains: Record<string, string> = {
   '137': 'Polygon',
   '246': 'EWC',
   '42161': 'Arbitrum',
+  '11155111': 'Sepolia',
 }
 
 const switchNetwork = async (chainId: string) => {
