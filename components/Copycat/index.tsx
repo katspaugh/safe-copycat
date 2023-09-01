@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
 import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
-import { getCreationInfo, CreationInfo } from '../../utils/tx-service'
+import { getCreationInfo, CreationInfo, getChainConfigs } from '../../utils/tx-service'
 import { Chains, ShortNames, connectWallet, copySafe, getConnectedAddress, getTransactionInfo } from '../../utils/eth'
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
@@ -23,6 +23,7 @@ const legacyAddresses: Record<string, string> = legacyProxyFactories.networkAddr
 const legacyFactoryExceptions = { '100': '' } // legacy xDai factory is incomaptible with others
 
 const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
+  const [txServiceHosts, setTxServiceHosts] = useState<Record<string, string>>({})
   const [safeAddress, setSafeAddress] = useState<string>(safe?.safeAddress)
   const [chainId, setChainId] = useState<string>(safe ? safe.chainId.toString() : undefined)
   const [walletAddress, setWalletAddress] = useState<string>('')
@@ -109,16 +110,27 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
     getConnectedAddress().then(setWalletAddress)
   }, [])
 
+  // Get the list of tx-service hosts
+  useEffect(() => {
+    getChainConfigs()
+      .then((data) => {
+        setTxServiceHosts(data.results.reduce((acc, cur) => {
+          acc[cur.chainId] = cur.transactionService
+          return acc
+        }, {}))
+      })
+  }, [])
+
   // Request the Safe creation tx from the Transaction Service
   useEffect(() => {
     setCreation(null)
 
-    if (chainId && safeAddress) {
+    if (chainId && safeAddress && txServiceHosts[chainId]) {
       setMessage('')
 
       setMessage('Getting creation transaction...')
 
-      getCreationInfo(chainId, safeAddress)
+      getCreationInfo(txServiceHosts[chainId], safeAddress)
         .then((data) => {
           setCreation(data)
           setMessage('')
@@ -128,7 +140,7 @@ const Copycat = ({ safe }: CopycatProps): React.ReactElement => {
           setMessage(new Error('Failed to load creation transaction'))
         })
     }
-  }, [chainId, safeAddress])
+  }, [chainId, safeAddress, txServiceHosts])
 
   useEffect(() => {
     if (message instanceof Error) {
