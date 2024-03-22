@@ -3,15 +3,6 @@ import { Form } from '../components/Form.js'
 import { CreationCard } from '../components/CreationCard.js'
 
 export function CopyFormPreview({ onSubmit, onChange }) {
-  // Elements
-  const logo = el('img', {
-    src: '/logo.svg',
-    style: {
-      width: '100px',
-      height: '100px',
-    },
-  })
-
   let prevConfigs = null
 
   const form = Form({
@@ -22,7 +13,20 @@ export function CopyFormPreview({ onSubmit, onChange }) {
   const creationCard = CreationCard()
 
   return Component({
-    children: [logo, form.render({}), creationCard.render({})],
+    children: [
+      el('img', {
+        src: '/logo.svg',
+        style: {
+          width: '100px',
+          height: '100px',
+          display: 'block',
+          marginBottom: '-1em',
+        },
+      }),
+
+      form.render({}),
+      creationCard.render({}),
+    ],
 
     style: {
       width: '100%',
@@ -30,7 +34,7 @@ export function CopyFormPreview({ onSubmit, onChange }) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      gap: '1em',
     },
 
     render({ chainId, safeAddress, creationInfo, chainConfigs }) {

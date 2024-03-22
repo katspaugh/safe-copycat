@@ -56,7 +56,6 @@ export function Form({ onSubmit, onChange }) {
       flexDirection: 'column',
       gap: '1em',
       padding: '1em',
-      margin: '0 1em',
       border: '1px solid #ccc',
       borderRadius: '0.5em',
     },

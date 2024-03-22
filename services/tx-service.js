@@ -1,7 +1,16 @@
 const CONFIG_SERVICE = 'https://safe-config.safe.global/api/v1/chains/'
 
+async function getJson(url) {
+  const resp = await fetch(url)
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch ${url}: ${resp.statusText}`)
+  }
+  return resp.json()
+}
+
 export async function getChainConfigs() {
-  return fetch(CONFIG_SERVICE).then((resp) => resp.json())
+  const data = await getJson(CONFIG_SERVICE)
+  return data.results
 }
 
 /**
@@ -23,5 +32,5 @@ export async function getChainConfigs() {
 /* @returns {Promise<CreationInfo>} */
 export async function getCreationInfo(txServiceHost, safeAddress) {
   const url = `${txServiceHost}/api/v1/safes/${safeAddress}/creation/`
-  return fetch(url).then((resp) => resp.json())
+  return getJson(url)
 }
