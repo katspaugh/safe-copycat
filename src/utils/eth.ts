@@ -20,6 +20,7 @@ export const ShortNames: Record<string, string> = {
   '84531': 'base-gor',
   '11155111': 'sep',
   '1313161554': 'aurora',
+  '84532': 'basesep',
 }
 
 export const Chains: Record<string, string> = {
@@ -37,6 +38,7 @@ export const Chains: Record<string, string> = {
   '84531': 'Base Goerli',
   '11155111': 'Sepolia',
   '1313161554': 'Aurora',
+  '84532': 'Base Sepolia',
 }
 
 const switchNetwork = async (walletProvider: any, chainId: string) => {
