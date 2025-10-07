@@ -6,6 +6,7 @@ import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_
 import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
 import { getCreationInfo, CreationInfo, getChainConfigs, decodeFactoryMethod } from '../../utils/tx-service'
 import { Chains, ShortNames, copySafe, copySafeWithCREATE2, getTransactionInfo, getTransactionInfoReadOnly } from '../../utils/eth'
+import { getSafeInfoReadOnly, decodeInitialSetup, compareSetups, createSyncTransaction } from '../../utils/safe-sync'
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
 import Web3ModalProvider from '../Web3ModalProvider'
@@ -113,6 +114,120 @@ const Copycat = (): React.ReactElement => {
     if (hash) {
       setMessage(`Transaction created: ${hash}`)
       setNewSafeUrl(getSafeUrl(newChainId, safeAddress))
+
+      // After successful deployment, wait for the Safe to be deployed and check if we should sync the configuration
+      waitForSafeDeployment(hash, newChainId, 0)
+    }
+  }
+
+  // Recursively wait for Safe deployment to complete
+  const waitForSafeDeployment = async (txHash: string, targetChainId: string, attempt: number) => {
+    const maxAttempts = 30 // 30 attempts * 2s = 60s max wait time
+
+    if (attempt >= maxAttempts) {
+      setMessage('Safe deployed successfully. (Timeout waiting for deployment confirmation)')
+      return
+    }
+
+    try {
+      // Check if the Safe contract has been deployed on the target chain
+      if (!walletProvider) {
+        setMessage('Safe deployed successfully. (No wallet provider available)')
+        return
+      }
+
+      const { BrowserProvider } = await import('ethers')
+      const provider = new BrowserProvider(walletProvider)
+
+      // First check if transaction is mined
+      const receipt = await provider.getTransactionReceipt(txHash)
+
+      if (!receipt) {
+        // Transaction not mined yet, wait and retry
+        setMessage(`Waiting for deployment... (${attempt + 1}/${maxAttempts})`)
+        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+        return
+      }
+
+      // Check if Safe contract exists at the address
+      const code = await provider.getCode(safeAddress)
+
+      if (code === '0x' || code === '0x0') {
+        // Contract not deployed yet, wait and retry
+        setMessage(`Deployment confirmed, waiting for contract... (${attempt + 1}/${maxAttempts})`)
+        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+        return
+      }
+
+      // Safe is deployed, now check configuration
+      checkAndSyncConfiguration()
+    } catch (err) {
+      console.error('Error checking deployment status:', err)
+      // Retry on error
+      setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+    }
+  }
+
+  // Check if Safe configuration has changed and offer to sync
+  const checkAndSyncConfiguration = async () => {
+    if (!creation || !walletProvider || !chainId || !safeAddress) return
+
+    try {
+      // Get current Safe info from the original chain (read-only)
+      setMessage('Checking if Safe configuration has changed...')
+      const currentInfo = await getSafeInfoReadOnly(chainId, safeAddress)
+
+      // Decode initial setup from creation data
+      const initialInfo = decodeInitialSetup(creation.setupData)
+      if (!initialInfo) {
+        console.error('Could not decode initial setup')
+        return
+      }
+
+      // Compare configurations
+      const { isDifferent, changes } = compareSetups(initialInfo, currentInfo)
+
+      if (isDifferent) {
+        const changesList = changes.map((c) => `• ${c}`).join('\n')
+        const userConfirmed = window.confirm(
+          `The original Safe's configuration has changed since it was created:\n\n${changesList}\n\nWould you like to create a transaction to sync these changes to the new Safe?`
+        )
+
+        if (userConfirmed) {
+          await syncSafeConfiguration(initialInfo, currentInfo)
+        } else {
+          setMessage('Sync skipped. Safe deployed successfully.')
+        }
+      } else {
+        setMessage('Safe deployed successfully. Configuration is unchanged.')
+      }
+    } catch (err) {
+      console.error('Failed to check configuration:', err)
+      setMessage('Safe deployed successfully. (Could not check configuration changes)')
+    }
+  }
+
+  // Create a Safe transaction to sync configuration
+  const syncSafeConfiguration = async (initial: any, target: any) => {
+    if (!walletProvider || !safeAddress) return
+
+    try {
+      setMessage('Creating sync transaction...')
+
+      const txData = await createSyncTransaction(initial, target, safeAddress)
+
+      // Open Safe transaction builder URL
+      const safeTxUrl = `https://app.safe.global/${ShortNames[newChainId]}:${safeAddress}/transactions/tx-builder`
+
+      setMessage(
+        `Please create the sync transaction manually:\n\n1. Go to: ${safeTxUrl}\n2. Use these details:\n   To: ${txData.to}\n   Value: ${txData.value}\n   Data: ${txData.data.slice(0, 20)}...`
+      )
+
+      // Open in new tab
+      window.open(safeTxUrl, '_blank')
+    } catch (err) {
+      console.error('Failed to create sync transaction:', err)
+      setMessage(`Error creating sync transaction: ${(err as Error).message}`)
     }
   }
 
