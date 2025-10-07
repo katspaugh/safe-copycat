@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useWeb3ModalProvider, useWeb3ModalAccount } from '@web3modal/ethers/react'
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
 import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
-import { getCreationInfo, CreationInfo, getChainConfigs } from '../../utils/tx-service'
+import { getCreationInfo, CreationInfo, getChainConfigs, decodeFactoryMethod } from '../../utils/tx-service'
 import { Chains, ShortNames, copySafe, copySafeWithCREATE2, getTransactionInfo } from '../../utils/eth'
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
@@ -25,6 +25,7 @@ const Copycat = (): React.ReactElement => {
   const [chainId, setChainId] = useState<string>('')
   const [newChainId, setNewChainId] = useState<string>('')
   const [creation, setCreation] = useState<CreationInfo|null>(null)
+  const [originalTxInput, setOriginalTxInput] = useState<string>('')
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
   const [message, setMessage] = useState<string>('')
   const { walletProvider } = useWeb3ModalProvider()
@@ -47,8 +48,8 @@ const Copycat = (): React.ReactElement => {
   const isOwner = !creation || !walletAddress ? true : creation.creator.toLowerCase() === walletAddress.toLowerCase()
 
   // Check if the Safe was deployed with CREATE2 (deterministic address)
-  const usesCREATE2 = creation?.dataDecoded?.method === 'createProxyWithCallback' ||
-                      creation?.dataDecoded?.method === 'createProxyWithNonce'
+  const usesCREATE2 = creation?.factoryMethod === 'createProxyWithCallback' ||
+                      creation?.factoryMethod === 'createProxyWithNonce'
 
   // Allow bare Ethereum addresses and EIP-1337 addresses with a prefix
   const onSafeAddressInput = (address: string, origChainId: string) => {
@@ -81,7 +82,10 @@ const Copycat = (): React.ReactElement => {
         if (!targetFactoryAddress) {
           throw new Error(`Factory not available on ${Chains[newChainId]}`)
         }
-        hash = await copySafeWithCREATE2(walletProvider, newChainId, targetFactoryAddress, creation)
+        if (!originalTxInput) {
+          throw new Error('Original transaction input not available')
+        }
+        hash = await copySafeWithCREATE2(walletProvider, newChainId, targetFactoryAddress, creation, originalTxInput)
       } else {
         // Fallback to old method (requires original creator)
         const txInfo = await getTransactionInfo(walletProvider, chainId, creation.transactionHash)
@@ -118,7 +122,20 @@ const Copycat = (): React.ReactElement => {
       setMessage('Getting creation transaction...')
 
       getCreationInfo(txServiceHosts[chainId], safeAddress)
-        .then((data) => {
+        .then(async (data) => {
+          // Fetch the actual transaction to get the factory method
+          try {
+            const txInfo = await getTransactionInfo(walletProvider, chainId, data.transactionHash)
+            const factoryInfo = decodeFactoryMethod(txInfo.input)
+            if (factoryInfo) {
+              data.factoryMethod = factoryInfo.method
+              data.factoryParameters = factoryInfo.parameters
+            }
+            // Store the original transaction input for CREATE2 deployment
+            setOriginalTxInput(txInfo.input)
+          } catch (err) {
+            console.error('Failed to decode factory method:', err)
+          }
           setCreation(data)
           setMessage('')
         })
@@ -127,7 +144,7 @@ const Copycat = (): React.ReactElement => {
           setMessage('Failed to load creation transaction')
         })
     }
-  }, [chainId, safeAddress, txServiceHosts])
+  }, [chainId, safeAddress, txServiceHosts, walletProvider])
 
   return (
     <div className={styles.container}>
@@ -216,7 +233,7 @@ const Copycat = (): React.ReactElement => {
 
       <div>
         <b>Method:</b>
-        {creation?.dataDecoded?.method || '...'}{' '}
+        {creation?.factoryMethod || '...'}{' '}
         {usesCREATE2 ? '(CREATE2 ✅)' : ''}
       </div>
 

@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, Interface } from 'ethers'
+import { BrowserProvider, Contract, Interface, AbiCoder } from 'ethers'
 import { CreationInfo } from './tx-service'
 
 // GnosisSafeProxyFactory ABI for v1.3.0
@@ -11,56 +11,58 @@ export const deploySafeWithCREATE2 = async (
   walletProvider: any,
   factoryAddress: string,
   creation: CreationInfo,
-  targetChainId: string
+  targetChainId: string,
+  originalTxInput: string
 ): Promise<string> => {
   const provider = new BrowserProvider(walletProvider)
   const signer = await provider.getSigner()
 
   // Get the factory contract
   const factory = new Contract(factoryAddress, PROXY_FACTORY_ABI, signer)
+  const factoryInterface = new Interface(PROXY_FACTORY_ABI)
 
-  // Extract parameters from the creation info
-  const method = creation.dataDecoded.method
-  const params = creation.dataDecoded.parameters
+  // Decode the original transaction input
+  const decodedData = factoryInterface.parseTransaction({ data: originalTxInput })
 
-  console.log('Deployment method:', method)
-  console.log('Parameters:', params)
-
-  // Find the required parameters
-  const singletonParam = params.find(p => p.name === '_singleton' || p.name === 'singleton')
-  const initializerParam = params.find(p => p.name === 'initializer')
-  const saltNonceParam = params.find(p => p.name === 'saltNonce')
-  const callbackParam = params.find(p => p.name === 'callback')
-
-  if (!singletonParam || !initializerParam || !saltNonceParam) {
-    throw new Error('Missing required parameters for Safe deployment')
+  if (!decodedData) {
+    throw new Error('Failed to decode transaction data')
   }
 
-  const singleton = singletonParam.value
-  const initializer = initializerParam.value
-  const saltNonce = saltNonceParam.value
+  console.log('Decoded factory method:', decodedData.name)
+  console.log('Decoded arguments:', decodedData.args)
 
-  console.log('Deploying Safe with:')
-  console.log('  Singleton:', singleton)
-  console.log('  Salt Nonce:', saltNonce)
-  console.log('  Initializer length:', initializer.length)
+  const method = creation.factoryMethod || decodedData.name
 
-  // Call the appropriate method
+  // Call the appropriate method with the exact same parameters
   let tx
-  if (method === 'createProxyWithCallback' && callbackParam) {
-    console.log('  Callback:', callbackParam.value)
+  if (method === 'createProxyWithCallback') {
+    const [singleton, initializer, saltNonce, callback] = decodedData.args
+    console.log('Deploying Safe with createProxyWithCallback:')
+    console.log('  Singleton:', singleton)
+    console.log('  Salt Nonce:', saltNonce.toString())
+    console.log('  Callback:', callback)
+    console.log('  Initializer length:', initializer.length)
+
     tx = await factory.createProxyWithCallback(
       singleton,
       initializer,
       saltNonce,
-      callbackParam.value
+      callback
     )
-  } else {
+  } else if (method === 'createProxyWithNonce') {
+    const [singleton, initializer, saltNonce] = decodedData.args
+    console.log('Deploying Safe with createProxyWithNonce:')
+    console.log('  Singleton:', singleton)
+    console.log('  Salt Nonce:', saltNonce.toString())
+    console.log('  Initializer length:', initializer.length)
+
     tx = await factory.createProxyWithNonce(
       singleton,
       initializer,
       saltNonce
     )
+  } else {
+    throw new Error(`Unsupported deployment method: ${method}`)
   }
 
   console.log('Transaction sent:', tx.hash)
