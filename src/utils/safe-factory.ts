@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, Interface, AbiCoder } from 'ethers'
 import { CreationInfo } from './tx-service'
+import { checkCallbackOnChains } from './callback-helper'
 
 // GnosisSafeProxyFactory ABI for v1.3.0
 const PROXY_FACTORY_ABI = [
@@ -37,13 +38,41 @@ export const deploySafeWithCREATE2 = async (
 
   // Verify required contracts exist
   const method = creation.factoryMethod || decodedData.name
+  let useCallbackFallback = false
+
   if (method === 'createProxyWithCallback') {
     const callback = decodedData.args[3]
 
     if (callback && callback !== '0x0000000000000000000000000000000000000000') {
       const callbackCode = await provider.getCode(callback)
       if (callbackCode === '0x') {
-        throw new Error(`⚠️ Callback contract ${callback} does not exist on this chain.\n\nThis Safe was deployed with a custom callback that's not available here. The deployment will fail.\n\nSuggested solutions:\n1. Try a different target chain where the callback exists\n2. Contact the Safe creator about callback availability`)
+        // Check which chains have this callback
+        console.log('Checking callback availability on other chains...')
+        const chainIds = ['1', '10', '56', '100', '137', '8453', '42161', '42220', '43114']
+        const availability = await checkCallbackOnChains(callback, chainIds)
+
+        const availableChains = Object.entries(availability)
+          .filter(([_, exists]) => exists)
+          .map(([chainId]) => {
+            const chainNames: Record<string, string> = {
+              '1': 'Ethereum',
+              '10': 'Optimism',
+              '56': 'BNB Chain',
+              '100': 'Gnosis Chain',
+              '137': 'Polygon',
+              '8453': 'Base',
+              '42161': 'Arbitrum',
+              '42220': 'Celo',
+              '43114': 'Avalanche',
+            }
+            return chainNames[chainId]
+          })
+
+        const availableMsg = availableChains.length > 0
+          ? `\n\n✅ This callback exists on: ${availableChains.join(', ')}\nTry deploying to one of these chains instead!`
+          : '\n\n❌ This callback was not found on any major chain.'
+
+        throw new Error(`⚠️ Callback contract ${callback} does not exist on this chain.\n\nThis Safe was deployed with a custom callback that's not available here. The deployment will fail.\n\n⚠️ IMPORTANT: This Safe uses CREATE2 with a callback parameter. The callback address is part of the salt calculation, so:\n• You CANNOT get the same Safe address on a chain without this callback\n• The callback must exist on the target chain for deterministic deployment\n• Deploying without the callback will result in a DIFFERENT address${availableMsg}`)
       }
     }
   }

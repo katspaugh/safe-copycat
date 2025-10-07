@@ -26,6 +26,7 @@ const Copycat = (): React.ReactElement => {
   const [newChainId, setNewChainId] = useState<string>('')
   const [creation, setCreation] = useState<CreationInfo|null>(null)
   const [originalTxInput, setOriginalTxInput] = useState<string>('')
+  const [callbackAddress, setCallbackAddress] = useState<string>('')
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
   const [message, setMessage] = useState<string>('')
   const { walletProvider } = useWeb3ModalProvider()
@@ -129,6 +130,7 @@ const Copycat = (): React.ReactElement => {
   // Request the Safe creation tx from the Transaction Service
   useEffect(() => {
     setCreation(null)
+    setCallbackAddress('')
 
     if (chainId && safeAddress && txServiceHosts[chainId]) {
       setMessage('')
@@ -147,6 +149,24 @@ const Copycat = (): React.ReactElement => {
             }
             // Store the original transaction input for CREATE2 deployment
             setOriginalTxInput(txInfo.input)
+
+            // Decode callback address if using createProxyWithCallback
+            if (factoryInfo?.method === 'createProxyWithCallback') {
+              // Decode the callback parameter (4th parameter in the method)
+              // Skip method selector (4 bytes) and decode using ABI
+              const { Interface } = await import('ethers')
+              const iface = new Interface([
+                'function createProxyWithCallback(address _singleton, bytes memory initializer, uint256 saltNonce, address callback)'
+              ])
+              try {
+                const decoded = iface.parseTransaction({ data: txInfo.input })
+                if (decoded && decoded.args[3]) {
+                  setCallbackAddress(decoded.args[3])
+                }
+              } catch (e) {
+                console.error('Failed to decode callback:', e)
+              }
+            }
           } catch (err) {
             console.error('Failed to decode factory method:', err)
           }
@@ -250,6 +270,13 @@ const Copycat = (): React.ReactElement => {
         {creation?.factoryMethod || '...'}{' '}
         {usesCREATE2 ? '(CREATE2 ✅)' : ''}
       </div>
+
+      {callbackAddress && (
+        <div>
+          <b>Callback:</b>
+          {callbackAddress}
+        </div>
+      )}
 
       <div>
         <form action="#" method="post" onSubmit={onSubmit}>
