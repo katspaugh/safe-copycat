@@ -14,7 +14,7 @@ import Footer from '../Footer'
 import styles from './styles.module.css'
 
 const getSafeUrl = (chainId: string, safeAddress: string): string => {
-  return `https://gnosis-safe.io/app/${ShortNames[chainId]}:${safeAddress}`
+  return `https://app.safe.global/settings/setup?safe=${ShortNames[chainId]}:${safeAddress}`
 }
 
 const factoryAddresses: Record<string, string> = proxyFactories.networkAddresses
