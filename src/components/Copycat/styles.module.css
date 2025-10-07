@@ -68,6 +68,7 @@
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 1000;
 }
 
@@ -82,6 +83,7 @@
   border-radius: 10px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  word-break: break-all;
   white-space: pre-wrap;
   font-family: inherit;
 }
