@@ -79,6 +79,46 @@ export const getTransactionInfo = async (
   return tx
 }
 
+// Fetch transaction info without requiring wallet or switching networks (for display only)
+export const getTransactionInfoReadOnly = async (
+  chainId: string,
+  txHash: string,
+): Promise<TransactionInfo> => {
+  // Use a public RPC endpoint to fetch the transaction
+  const rpcUrls: Record<string, string> = {
+    '1': 'https://eth.llamarpc.com',
+    '10': 'https://optimism.llamarpc.com',
+    '137': 'https://polygon.llamarpc.com',
+    '42161': 'https://arbitrum.llamarpc.com',
+    '8453': 'https://base.llamarpc.com',
+    '100': 'https://rpc.gnosischain.com',
+  }
+
+  const rpcUrl = rpcUrls[chainId]
+  if (!rpcUrl) {
+    throw new Error(`No public RPC available for chain ${chainId}`)
+  }
+
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getTransactionByHash',
+      params: [txHash],
+      id: 1,
+    }),
+  })
+
+  const data = await response.json()
+  if (data.error) {
+    throw new Error(data.error.message)
+  }
+
+  console.log('Creation tx (read-only)', data.result)
+  return data.result
+}
+
 export const copySafe = async (walletProvider: any, chainId: string, tx: TransactionInfo): Promise<string> => {
   // Switch to the chain where we're creating a new Safe
   await switchNetwork(walletProvider, chainId)

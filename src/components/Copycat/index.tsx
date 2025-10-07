@@ -5,7 +5,7 @@ import { useWeb3ModalProvider, useWeb3ModalAccount } from '@web3modal/ethers/rea
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
 import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
 import { getCreationInfo, CreationInfo, getChainConfigs, decodeFactoryMethod } from '../../utils/tx-service'
-import { Chains, ShortNames, copySafe, copySafeWithCREATE2, getTransactionInfo } from '../../utils/eth'
+import { Chains, ShortNames, copySafe, copySafeWithCREATE2, getTransactionInfo, getTransactionInfoReadOnly } from '../../utils/eth'
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
 import Web3ModalProvider from '../Web3ModalProvider'
@@ -123,9 +123,9 @@ const Copycat = (): React.ReactElement => {
 
       getCreationInfo(txServiceHosts[chainId], safeAddress)
         .then(async (data) => {
-          // Fetch the actual transaction to get the factory method
+          // Fetch the actual transaction to get the factory method (without wallet)
           try {
-            const txInfo = await getTransactionInfo(walletProvider, chainId, data.transactionHash)
+            const txInfo = await getTransactionInfoReadOnly(chainId, data.transactionHash)
             const factoryInfo = decodeFactoryMethod(txInfo.input)
             if (factoryInfo) {
               data.factoryMethod = factoryInfo.method
@@ -144,7 +144,7 @@ const Copycat = (): React.ReactElement => {
           setMessage('Failed to load creation transaction')
         })
     }
-  }, [chainId, safeAddress, txServiceHosts, walletProvider])
+  }, [chainId, safeAddress, txServiceHosts])
 
   return (
     <div className={styles.container}>
