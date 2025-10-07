@@ -10,6 +10,7 @@ import { getSafeInfoReadOnly, decodeInitialSetup, compareSetups, createSyncTrans
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
 import Web3ModalProvider from '../Web3ModalProvider'
+import Footer from '../Footer'
 import styles from './styles.module.css'
 
 const getSafeUrl = (chainId: string, safeAddress: string): string => {
@@ -433,6 +434,8 @@ const Copycat = (): React.ReactElement => {
           {message.toString()}
         </div>
       )}
+
+      <Footer />
     </div>
   )
 }
