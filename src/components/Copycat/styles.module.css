@@ -83,7 +83,6 @@
   background-color: #ffdddd;
   border: 1px solid #ff0000;
   padding: 1.5em;
-  padding-right: 3em;
   border-radius: 10px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -171,27 +170,6 @@
 
 .sponsorIcon {
   color: #bf3989;
-}
-
-.closeButton {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 4px;
-  width: 1em;
-  color: inherit;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.closeButton:hover {
-  opacity: 1;
-  background: transparent !important;
 }
 
 @media (prefers-color-scheme: dark) {
