@@ -5,6 +5,7 @@
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .header h1 {
@@ -114,4 +115,44 @@
 .result a {
   color: inherit;
   text-decoration: underline;
+}
+
+.sponsor {
+  margin-left: auto;
+  padding-left: 20px;
+}
+
+.sponsor a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #fff;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  color: #24292e;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.sponsor a:hover {
+  background-color: #f6f8fa;
+}
+
+.sponsorIcon {
+  color: #bf3989;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sponsor a {
+    background-color: #21262d;
+    border-color: #30363d;
+    color: #c9d1d9;
+  }
+
+  .sponsor a:hover {
+    background-color: #30363d;
+  }
 }
