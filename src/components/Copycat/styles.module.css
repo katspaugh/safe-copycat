@@ -81,8 +81,23 @@
 }
 
 .message {
-  background-color: #F3F7FB;;
+  background-color: #F3F7FB;
   border: 1px solid #333;
+  color: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  .message {
+    background-color: #1a1a1a;
+    border: 1px solid #666;
+    color: #fff;
+  }
+
+  .error,
+  .warning {
+    background-color: #3a1a1a;
+    color: #fff;
+  }
 }
 
 .submit {
