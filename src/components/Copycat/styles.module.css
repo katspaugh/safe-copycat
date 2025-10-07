@@ -69,7 +69,8 @@
 
 .message,
 .error,
-.warning {
+.warning,
+.success {
   text-align: center;
   background-color: #ffdddd;
   border: 1px solid #ff0000;
@@ -77,8 +78,15 @@
   border-radius: 10px;
 }
 
-.warning {
+.warning,
+.success {
   margin-bottom: 40px !important;
+}
+
+.success {
+  background-color: #ddffdd;
+  border: 1px solid #00aa00;
+  color: #006600;
 }
 
 .message {
@@ -98,6 +106,12 @@
   .warning {
     background-color: #3a1a1a;
     color: #fff;
+  }
+
+  .success {
+    background-color: #1a3a1a;
+    border-color: #00cc00;
+    color: #aaffaa;
   }
 }
 

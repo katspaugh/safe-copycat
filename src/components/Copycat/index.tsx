@@ -5,7 +5,7 @@ import { useWeb3ModalProvider, useWeb3ModalAccount } from '@web3modal/ethers/rea
 import proxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.3.0/proxy_factory.json'
 import legacyProxyFactories from '@gnosis.pm/safe-deployments/src/assets/v1.1.1/proxy_factory.json'
 import { getCreationInfo, CreationInfo, getChainConfigs } from '../../utils/tx-service'
-import { Chains, ShortNames, copySafe, getTransactionInfo } from '../../utils/eth'
+import { Chains, ShortNames, copySafe, copySafeWithCREATE2, getTransactionInfo } from '../../utils/eth'
 import AddressInput from '../AddressInput'
 import WalletHeader from '../WalletHeader'
 import Web3ModalProvider from '../Web3ModalProvider'
@@ -46,6 +46,10 @@ const Copycat = (): React.ReactElement => {
   const isSupported = creation ? !!version : true
   const isOwner = !creation || !walletAddress ? true : creation.creator.toLowerCase() === walletAddress.toLowerCase()
 
+  // Check if the Safe was deployed with CREATE2 (deterministic address)
+  const usesCREATE2 = creation?.dataDecoded?.method === 'createProxyWithCallback' ||
+                      creation?.dataDecoded?.method === 'createProxyWithNonce'
+
   // Allow bare Ethereum addresses and EIP-1337 addresses with a prefix
   const onSafeAddressInput = (address: string, origChainId: string) => {
     setSafeAddress(address)
@@ -66,21 +70,23 @@ const Copycat = (): React.ReactElement => {
     // Make sure we have a creation tx and a new chainId
     if (!creation || !walletAddress) return
 
-    // Get transaction info
-    let txInfo = undefined
-    try {
-      txInfo = await getTransactionInfo(walletProvider, chainId, creation.transactionHash)
-    } catch (err) {
-      setMessage((err as Error).message)
-      return
-    }
-
     setMessage(`Switching to ${Chains[newChainId]} and creating a copy of the Safe`)
 
     // Create a copy of the Safe
     let hash = ''
     try {
-      hash = await copySafe(walletProvider, newChainId, txInfo)
+      if (usesCREATE2) {
+        // Use CREATE2 deployment for deterministic addresses (any deployer can recreate)
+        const targetFactoryAddress = supportedFactoryAddress[newChainId]
+        if (!targetFactoryAddress) {
+          throw new Error(`Factory not available on ${Chains[newChainId]}`)
+        }
+        hash = await copySafeWithCREATE2(walletProvider, newChainId, targetFactoryAddress, creation)
+      } else {
+        // Fallback to old method (requires original creator)
+        const txInfo = await getTransactionInfo(walletProvider, chainId, creation.transactionHash)
+        hash = await copySafe(walletProvider, newChainId, txInfo)
+      }
     } catch (err) {
       setMessage((err as Error).message)
     }
@@ -158,10 +164,17 @@ const Copycat = (): React.ReactElement => {
         </div>
       )}
 
-      {!isOwner && (
+      {!usesCREATE2 && !isOwner && (
         <div className={styles.warning}>
           <strong>You&apos;re not the creator of that Safe!</strong><br />
           Copying this Safe will result in a different address.<br />
+        </div>
+      )}
+
+      {usesCREATE2 && !isOwner && (
+        <div className={styles.success}>
+          <strong>✅ CREATE2 deployment detected!</strong><br />
+          This Safe can be deployed to the same address by anyone (not just the original creator).<br />
         </div>
       )}
 
@@ -199,6 +212,12 @@ const Copycat = (): React.ReactElement => {
         {creation?.factoryAddress || '...'}{' '}
         <strong>{version} </strong>
         {creation ? isSupported ? '✅' : '❌' : ''}
+      </div>
+
+      <div>
+        <b>Method:</b>
+        {creation?.dataDecoded?.method || '...'}{' '}
+        {usesCREATE2 ? '(CREATE2 ✅)' : ''}
       </div>
 
       <div>

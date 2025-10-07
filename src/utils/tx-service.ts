@@ -2,8 +2,12 @@ export type CreationInfo = {
   created: string;
   creator: string;
   dataDecoded: {
-    method: 'setup';
-    parameters: unknown;
+    method: string;
+    parameters: Array<{
+      name: string;
+      type: string;
+      value: any;
+    }>;
   };
   factoryAddress: string;
   masterCopy: string;
