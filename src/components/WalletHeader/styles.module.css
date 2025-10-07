@@ -13,11 +13,23 @@
 }
 
 .header button[disabled] {
-  color: inherit;
+  color: #000;
   cursor: default;
   border-color: #ddd;
 }
 
 .header button[disabled]:hover {
   background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .header button[disabled] {
+    color: #fff;
+    background-color: #1a1a1a;
+    border-color: #666;
+  }
+
+  .header button[disabled]:hover {
+    background-color: #1a1a1a;
+  }
 }
