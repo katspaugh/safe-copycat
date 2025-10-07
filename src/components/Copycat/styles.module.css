@@ -174,12 +174,13 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background: none;
+  background: transparent;
   border: none;
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
   padding: 2px 4px;
+  width: 1em;
   color: inherit;
   opacity: 0.6;
   transition: opacity 0.2s;
@@ -187,7 +188,7 @@
 
 .closeButton:hover {
   opacity: 1;
-  background-color: transparent !important;
+  background: transparent !important;
 }
 
 @media (prefers-color-scheme: dark) {

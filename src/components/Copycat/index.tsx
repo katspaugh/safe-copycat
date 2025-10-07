@@ -123,7 +123,8 @@ const Copycat = (): React.ReactElement => {
 
   // Recursively wait for Safe deployment to complete
   const waitForSafeDeployment = async (txHash: string, targetChainId: string, attempt: number) => {
-    const maxAttempts = 30 // 30 attempts * 2s = 60s max wait time
+    const maxAttempts = 50 // 50 attempts * 10s = 500s max wait time
+    const retryInterval = 10000 // 10 seconds
 
     if (attempt >= maxAttempts) {
       setMessage('Safe deployed successfully. (Timeout waiting for deployment confirmation)')
@@ -146,7 +147,7 @@ const Copycat = (): React.ReactElement => {
       if (!receipt) {
         // Transaction not mined yet, wait and retry
         setMessage(`Waiting for deployment... (${attempt + 1}/${maxAttempts})`)
-        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), retryInterval)
         return
       }
 
@@ -156,7 +157,7 @@ const Copycat = (): React.ReactElement => {
       if (code === '0x' || code === '0x0') {
         // Contract not deployed yet, wait and retry
         setMessage(`Deployment confirmed, waiting for contract... (${attempt + 1}/${maxAttempts})`)
-        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+        setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), retryInterval)
         return
       }
 
@@ -165,7 +166,7 @@ const Copycat = (): React.ReactElement => {
     } catch (err) {
       console.error('Error checking deployment status:', err)
       // Retry on error
-      setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), 2000)
+      setTimeout(() => waitForSafeDeployment(txHash, targetChainId, attempt + 1), retryInterval)
     }
   }
 
