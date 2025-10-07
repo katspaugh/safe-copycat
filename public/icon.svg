@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style type="text/css">
+    .st0{fill:#373435;}
+    .st1{fill:#CDE1F2;}
+    .st2{fill:#F49DBA;}
+    .st3{fill:#C73459;}
+  </style>
+  <g>
+    <!-- Outer shape -->
+    <path class="st0" d="M256,32c123.7,0,224,100.3,224,224s-100.3,224-224,224S32,379.7,32,256S132.3,32,256,32z"/>
+
+    <!-- Inner light blue -->
+    <ellipse class="st1" cx="256" cy="256" rx="180" ry="180"/>
+
+    <!-- Left ear/shape -->
+    <ellipse class="st2" cx="160" cy="180" rx="50" ry="70" transform="rotate(-25 160 180)"/>
+
+    <!-- Right ear/shape -->
+    <ellipse class="st2" cx="352" cy="180" rx="50" ry="70" transform="rotate(25 352 180)"/>
+
+    <!-- Eyes -->
+    <ellipse class="st3" cx="200" cy="240" rx="20" ry="30"/>
+    <ellipse class="st3" cx="312" cy="240" rx="20" ry="30"/>
+
+    <!-- Smile/mouth -->
+    <path class="st3" d="M200,300 Q256,340 312,300" fill="none" stroke="#C73459" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>
