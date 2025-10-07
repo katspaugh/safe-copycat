@@ -48,7 +48,7 @@ export const deploySafeWithCREATE2 = async (
       if (callbackCode === '0x') {
         // Check which chains have this callback
         console.log('Checking callback availability on other chains...')
-        const chainIds = ['1', '10', '56', '100', '137', '8453', '42161', '42220', '43114']
+        const chainIds = ['1', '10', '50', '56', '100', '137', '324', '1101', '5000', '8453', '42161', '42220', '43114', '59144', '534352', '1313161554']
         const availability = await checkCallbackOnChains(callback, chainIds)
 
         const availableChains = Object.entries(availability)
@@ -57,13 +57,20 @@ export const deploySafeWithCREATE2 = async (
             const chainNames: Record<string, string> = {
               '1': 'Ethereum',
               '10': 'Optimism',
+              '50': 'XDC Network',
               '56': 'BNB Chain',
               '100': 'Gnosis Chain',
               '137': 'Polygon',
+              '324': 'zkSync Era',
+              '1101': 'Polygon zkEVM',
+              '5000': 'Mantle',
               '8453': 'Base',
               '42161': 'Arbitrum',
               '42220': 'Celo',
               '43114': 'Avalanche',
+              '59144': 'Linea',
+              '534352': 'Scroll',
+              '1313161554': 'Aurora',
             }
             return chainNames[chainId]
           })
