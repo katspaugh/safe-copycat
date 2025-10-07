@@ -30,6 +30,7 @@ const Copycat = (): React.ReactElement => {
   const [callbackAddress, setCallbackAddress] = useState<string>('')
   const [newSafeUrl, setNewSafeUrl] = useState<string>('')
   const [message, setMessage] = useState<string>('')
+  const [isCreating, setIsCreating] = useState<boolean>(false)
   const { walletProvider } = useWeb3ModalProvider()
   const { address: walletAddress } = useWeb3ModalAccount()
 
@@ -69,9 +70,13 @@ const Copycat = (): React.ReactElement => {
 
     // Reset previous request
     setMessage('')
+    setIsCreating(true)
 
     // Make sure we have a creation tx and a new chainId
-    if (!creation || !walletAddress) return
+    if (!creation || !walletAddress) {
+      setIsCreating(false)
+      return
+    }
 
     setMessage(`Switching to ${Chains[newChainId]} and creating a copy of the Safe`)
 
@@ -109,12 +114,15 @@ const Copycat = (): React.ReactElement => {
       }
 
       setMessage(errorMessage)
+      setIsCreating(false)
     }
 
     if (hash) {
       setMessage(`Transaction created: ${hash}`)
       setNewSafeUrl(getSafeUrl(newChainId, safeAddress))
     }
+
+    setIsCreating(false)
   }
 
   // Get the list of tx-service hosts
@@ -294,7 +302,7 @@ const Copycat = (): React.ReactElement => {
           </label>
 
           <div className={styles.submit}>
-            <button type="submit" disabled={!creation || !walletAddress}>Copy Safe</button>
+            <button type="submit" disabled={!creation || !walletAddress || isCreating}>Copy Safe</button>
           </div>
         </form>
       </div>
