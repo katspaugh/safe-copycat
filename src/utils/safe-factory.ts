@@ -24,21 +24,6 @@ export const deploySafeWithCREATE2 = async (
     throw new Error(`✅ Safe already exists at ${expectedSafeAddress} on this chain! No need to deploy.`)
   }
 
-  // Verify required contracts exist
-  const method = creation.factoryMethod || decodedData?.name
-  if (method === 'createProxyWithCallback') {
-    const tempInterface = new Interface(PROXY_FACTORY_ABI)
-    const tempDecoded = tempInterface.parseTransaction({ data: originalTxInput })
-    const callback = tempDecoded?.args[3]
-
-    if (callback && callback !== '0x0000000000000000000000000000000000000000') {
-      const callbackCode = await provider.getCode(callback)
-      if (callbackCode === '0x') {
-        throw new Error(`⚠️ Callback contract ${callback} does not exist on this chain.\n\nThis Safe was deployed with a custom callback that's not available here. The deployment will fail.\n\nSuggested solutions:\n1. Try a different target chain where the callback exists\n2. Contact the Safe creator about callback availability`)
-      }
-    }
-  }
-
   // Get the factory contract
   const factory = new Contract(factoryAddress, PROXY_FACTORY_ABI, signer)
   const factoryInterface = new Interface(PROXY_FACTORY_ABI)
@@ -50,10 +35,28 @@ export const deploySafeWithCREATE2 = async (
     throw new Error('Failed to decode transaction data')
   }
 
+  // Verify required contracts exist
+  const method = creation.factoryMethod || decodedData.name
+  if (method === 'createProxyWithCallback') {
+    const callback = decodedData.args[3]
+
+    if (callback && callback !== '0x0000000000000000000000000000000000000000') {
+      const callbackCode = await provider.getCode(callback)
+      if (callbackCode === '0x') {
+        throw new Error(`⚠️ Callback contract ${callback} does not exist on this chain.\n\nThis Safe was deployed with a custom callback that's not available here. The deployment will fail.\n\nSuggested solutions:\n1. Try a different target chain where the callback exists\n2. Contact the Safe creator about callback availability`)
+      }
+    }
+  }
+
+  // Check if singleton contract exists
+  const singleton = decodedData.args[0]
+  const singletonCode = await provider.getCode(singleton)
+  if (singletonCode === '0x') {
+    throw new Error(`⚠️ Singleton contract ${singleton} does not exist on this chain.\n\nThis Safe uses a singleton (master copy) that's not deployed on the target chain. The deployment will fail.\n\nSuggested solutions:\n1. Try a different target chain where this singleton is deployed\n2. This may be an older or custom Safe version`)
+  }
+
   console.log('Decoded factory method:', decodedData.name)
   console.log('Decoded arguments:', decodedData.args)
-
-  const method = creation.factoryMethod || decodedData.name
 
   // Call the appropriate method with the exact same parameters
   let tx
