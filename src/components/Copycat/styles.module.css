@@ -65,17 +65,25 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1000;
 }
 
 .message,
 .error,
 .warning,
 .success {
-  text-align: center;
+  text-align: left;
   background-color: #ffdddd;
   border: 1px solid #ff0000;
   padding: 1.5em;
   border-radius: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: inherit;
 }
 
 .warning,

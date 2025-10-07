@@ -92,7 +92,21 @@ const Copycat = (): React.ReactElement => {
         hash = await copySafe(walletProvider, newChainId, txInfo)
       }
     } catch (err) {
-      setMessage((err as Error).message)
+      // Clean up error messages for better readability
+      let errorMessage = (err as Error).message
+
+      // Extract just the important part from ethers.js errors
+      if (errorMessage.includes('CALL_EXCEPTION')) {
+        errorMessage = 'Transaction would fail. Possible reasons:\n• Safe already exists at this address\n• Required contracts not available on this chain\n• Invalid deployment parameters'
+      }
+
+      // Truncate very long error messages
+      if (errorMessage.length > 500) {
+        errorMessage = errorMessage.substring(0, 500) + '...\n\n(See browser console for full error)'
+        console.error('Full error:', err)
+      }
+
+      setMessage(errorMessage)
     }
 
     if (hash) {
