@@ -281,6 +281,13 @@ const Copycat = (): React.ReactElement => {
 
       {message && (
         <div className={message?.startsWith('Error') ? styles.error : styles.message}>
+          <button
+            className={styles.closeButton}
+            onClick={() => setMessage('')}
+            aria-label="Close"
+          >
+            ×
+          </button>
           {message.toString()}
         </div>
       )}
