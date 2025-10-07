@@ -25,3 +25,18 @@ main {
   display: flex;
   justify-content: center;
 }
+
+/* Web3Modal button customization */
+w3m-button::part(button) {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  w3m-button::part(button) {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: 1px solid #fff !important;
+  }
+}

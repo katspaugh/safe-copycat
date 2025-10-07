@@ -7,3 +7,28 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* Customize Web3Modal button */
+.header :global(w3m-button) {
+  --w3m-accent: #000;
+}
+
+/* Light mode: white-on-black with black border */
+.header :global(w3m-button::part(button)) {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+}
+
+/* Dark mode: black-on-white */
+@media (prefers-color-scheme: dark) {
+  .header :global(w3m-button) {
+    --w3m-accent: #fff;
+  }
+
+  .header :global(w3m-button::part(button)) {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: 1px solid #fff !important;
+  }
+}
