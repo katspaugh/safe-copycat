@@ -146,13 +146,14 @@ export const copySafeWithCREATE2 = async (
   chainId: string,
   factoryAddress: string,
   creation: CreationInfo,
-  originalTxInput: string
+  originalTxInput: string,
+  expectedSafeAddress: string
 ): Promise<string> => {
   // Switch to the chain where we're creating a new Safe
   await switchNetwork(walletProvider, chainId)
 
   // Deploy using CREATE2 with the exact same parameters
-  const hash = await deploySafeWithCREATE2(walletProvider, factoryAddress, creation, chainId, originalTxInput)
+  const hash = await deploySafeWithCREATE2(walletProvider, factoryAddress, creation, chainId, originalTxInput, expectedSafeAddress)
 
   return hash
 }

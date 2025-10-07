@@ -85,7 +85,7 @@ const Copycat = (): React.ReactElement => {
         if (!originalTxInput) {
           throw new Error('Original transaction input not available')
         }
-        hash = await copySafeWithCREATE2(walletProvider, newChainId, targetFactoryAddress, creation, originalTxInput)
+        hash = await copySafeWithCREATE2(walletProvider, newChainId, targetFactoryAddress, creation, originalTxInput, safeAddress)
       } else {
         // Fallback to old method (requires original creator)
         const txInfo = await getTransactionInfo(walletProvider, chainId, creation.transactionHash)

@@ -12,10 +12,32 @@ export const deploySafeWithCREATE2 = async (
   factoryAddress: string,
   creation: CreationInfo,
   targetChainId: string,
-  originalTxInput: string
+  originalTxInput: string,
+  expectedSafeAddress: string
 ): Promise<string> => {
   const provider = new BrowserProvider(walletProvider)
   const signer = await provider.getSigner()
+
+  // Check if Safe already exists at the target address
+  const code = await provider.getCode(expectedSafeAddress)
+  if (code !== '0x') {
+    throw new Error(`✅ Safe already exists at ${expectedSafeAddress} on this chain! No need to deploy.`)
+  }
+
+  // Verify required contracts exist
+  const method = creation.factoryMethod || decodedData?.name
+  if (method === 'createProxyWithCallback') {
+    const tempInterface = new Interface(PROXY_FACTORY_ABI)
+    const tempDecoded = tempInterface.parseTransaction({ data: originalTxInput })
+    const callback = tempDecoded?.args[3]
+
+    if (callback && callback !== '0x0000000000000000000000000000000000000000') {
+      const callbackCode = await provider.getCode(callback)
+      if (callbackCode === '0x') {
+        throw new Error(`⚠️ Callback contract ${callback} does not exist on this chain.\n\nThis Safe was deployed with a custom callback that's not available here. The deployment will fail.\n\nSuggested solutions:\n1. Try a different target chain where the callback exists\n2. Contact the Safe creator about callback availability`)
+      }
+    }
+  }
 
   // Get the factory contract
   const factory = new Contract(factoryAddress, PROXY_FACTORY_ABI, signer)
@@ -35,34 +57,42 @@ export const deploySafeWithCREATE2 = async (
 
   // Call the appropriate method with the exact same parameters
   let tx
-  if (method === 'createProxyWithCallback') {
-    const [singleton, initializer, saltNonce, callback] = decodedData.args
-    console.log('Deploying Safe with createProxyWithCallback:')
-    console.log('  Singleton:', singleton)
-    console.log('  Salt Nonce:', saltNonce.toString())
-    console.log('  Callback:', callback)
-    console.log('  Initializer length:', initializer.length)
+  try {
+    if (method === 'createProxyWithCallback') {
+      const [singleton, initializer, saltNonce, callback] = decodedData.args
+      console.log('Deploying Safe with createProxyWithCallback:')
+      console.log('  Singleton:', singleton)
+      console.log('  Salt Nonce:', saltNonce.toString())
+      console.log('  Callback:', callback)
+      console.log('  Initializer length:', initializer.length)
 
-    tx = await factory.createProxyWithCallback(
-      singleton,
-      initializer,
-      saltNonce,
-      callback
-    )
-  } else if (method === 'createProxyWithNonce') {
-    const [singleton, initializer, saltNonce] = decodedData.args
-    console.log('Deploying Safe with createProxyWithNonce:')
-    console.log('  Singleton:', singleton)
-    console.log('  Salt Nonce:', saltNonce.toString())
-    console.log('  Initializer length:', initializer.length)
+      tx = await factory.createProxyWithCallback(
+        singleton,
+        initializer,
+        saltNonce,
+        callback
+      )
+    } else if (method === 'createProxyWithNonce') {
+      const [singleton, initializer, saltNonce] = decodedData.args
+      console.log('Deploying Safe with createProxyWithNonce:')
+      console.log('  Singleton:', singleton)
+      console.log('  Salt Nonce:', saltNonce.toString())
+      console.log('  Initializer length:', initializer.length)
 
-    tx = await factory.createProxyWithNonce(
-      singleton,
-      initializer,
-      saltNonce
-    )
-  } else {
-    throw new Error(`Unsupported deployment method: ${method}`)
+      tx = await factory.createProxyWithNonce(
+        singleton,
+        initializer,
+        saltNonce
+      )
+    } else {
+      throw new Error(`Unsupported deployment method: ${method}`)
+    }
+  } catch (error: any) {
+    // Provide more helpful error messages
+    if (error.code === 'CALL_EXCEPTION') {
+      throw new Error('Transaction would fail. Possible reasons:\n- Safe already deployed at this address\n- Callback contract not available on this chain\n- Singleton contract not available on this chain')
+    }
+    throw error
   }
 
   console.log('Transaction sent:', tx.hash)
